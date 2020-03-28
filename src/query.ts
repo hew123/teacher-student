@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import {createConnection} from "typeorm";
+import {createConnection, AdvancedConsoleLogger} from "typeorm";
 import {Teacher} from "./entity/Teacher";
 import {Student} from "./entity/Student";
 
@@ -7,21 +7,20 @@ import {Student} from "./entity/Student";
 export const getData = async(email:string) =>{
 
     let connection = await createConnection();
-    const obj = await connection
-        .getRepository(Teacher)
-        .findOne({
-            //select:[],
-            relations:["students"],
-            where:{
-                email:email
-            }
-        });
-
+    const teacher = await connection.getRepository(Teacher).findOne(
+        {relations:["students"],where:{email:email}});
+    
     connection.close();
-
-    var students = [];
-    if(obj!=null)
-        return obj['students'];
+    
+    if(teacher!=null){
+        var students = teacher['students'];
+        if(students.length!=0 && students!=null){
+            var unwrapped = students.map((student)=>student['email']);
+            return unwrapped;
+        }
+        else
+            return [];
+    }
     else
         return [];
 }
@@ -29,26 +28,25 @@ export const getData = async(email:string) =>{
 export const getCommonStudents = async(emails:string[])=>{
 
     var arrayStudents = emails.map(async(email)=>await getData(email));
-    var commonStudents = await arrayStudents[0];
-    for(var i=1;i<arrayStudents.length;i++)
-        commonStudents = commonStudents.filter(async(student) => (await arrayStudents[i]).includes(student));
-    
-    var unwrapped = [];
-    if(commonStudents.length!=0)
-        unwrapped = commonStudents.map((student)=>student['email']);
+    var studentEmails = arrayStudents.filter(async(array) => (await array).length>0);
+    var commonStudents = await studentEmails.pop();
 
-    var result = {"students":unwrapped};
+    for(var list of studentEmails){
+        for(var item of commonStudents){
+            var index = commonStudents.indexOf(item);
+            if(!((await list).includes(item)))
+                commonStudents.splice(index,1);
+        }
+    }
+
+    var result = {"students":commonStudents};
     return JSON.stringify(result);
 }
 
 export const getStudents = async(email:string)=>{
 
     var students = await getData(email);
-    var unwrapped = [];
-    if(students.length!=0)
-        unwrapped = students.map((student)=>student['email']);
-
-    var result = {"students":unwrapped};
+    var result = {"students":students};
     return JSON.stringify(result);
 }
 
@@ -71,22 +69,38 @@ export const registerStudents = async(body:object)=>{
         var find = await connection.getRepository(Student).findOne({where:{email:email}});
         
         if(find==null){
-            await connection.getRepository(Student).save(student);
+            await connection.manager.save(student);
             console.log("Saved a new student with id: " + student.email);
         }
         students.push(student);
     }
     
-    var teacher = await connection.getRepository(Teacher).findOne({where:{email:teacher_query}});
+    var teacher = await connection.getRepository(Teacher).findOne(
+                        {relations:["students"],where:{email:teacher_query}});
+    
     if(teacher==null){
         teacher = new Teacher();
         teacher.email = teacher_query;
+        teacher.students = students;
         console.log("Saved a new teacher with id: " + teacher.email);
     }
-    teacher.students = students;
-    await connection.getRepository(Teacher).save(teacher);
+    else{
+        var existing = teacher['students'];
+        console.log("existing",existing);
+        if(existing!=null || existing.length!=0){
+            let difference = students.filter((person)=>!existing.includes(person));
+            console.log("different",difference);
+            let union = difference.concat(existing);
+            teacher.students = union;
+            console.log("union",union);
+        }
+        else{
+            teacher.students = students;
+        }   
+    }
+
+    connection.manager.save(teacher).then(()=>{connection.close()});
+    
     console.log("Registered new students under teacher id: " + teacher.email);
 
-    connection.close();
-    return true;
 }

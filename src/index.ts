@@ -35,8 +35,8 @@ app.post('/api/register', async function(req,res){
     if(JSON.stringify(query)==JSON.stringify({})){
         res.status(400).send("Please enter something in POST body in json");
     }else{
-        var result = await registerStudents(query);
-        res.status(204).send(result);
+        await registerStudents(query);
+        res.status(204).send("done");
     }
 });
 

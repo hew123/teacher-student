@@ -1,13 +1,10 @@
-import {Entity, Column, PrimaryGeneratedColumn, ManyToMany} from "typeorm";
+import {Entity, Column, PrimaryColumn, ManyToMany} from "typeorm";
 import {Teacher} from "./Teacher";
 
 @Entity()
 export class Student {
 
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
+    @PrimaryColumn()
     email: string;
 
     @Column()

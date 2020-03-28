@@ -1,13 +1,10 @@
-import {Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable} from "typeorm";
+import {Entity, PrimaryColumn, Column, ManyToMany, JoinTable} from "typeorm";
 import {Student} from "./Student";
 
 @Entity()
 export class Teacher {
 
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
+    @PrimaryColumn()
     email: string;
 
     @ManyToMany(type => Student, student => student.teachers)
