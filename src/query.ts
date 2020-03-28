@@ -74,9 +74,7 @@ export const registerStudents = async(body:object)=>{
             await connection.getRepository(Student).save(student);
             console.log("Saved a new student with id: " + student.email);
         }
-        console.log(student);
         students.push(student);
-        console.log(students);
     }
     
     var teacher = await connection.getRepository(Teacher).findOne({where:{email:teacher_query}});
