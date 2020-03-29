@@ -13,6 +13,7 @@ TO RUN EXISTING IMPLEMENTED PROJECT
 - connect to database in mySQL workbench at port:3308 using the user="root"&pw="helloworld" run query: {ALTER USER 'root' IDENTIFIED WITH mysql_native_password BY 'helloworld';FLUSH PRIVILEGES;}
 (DB setting is in ormconfig.json)
 - npm install
+- ts-node src/inject.ts to inject some initial data (optional)
 - npm start
 - (send api request to localhost:3000)
 
