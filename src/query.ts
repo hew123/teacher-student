@@ -1,8 +1,20 @@
 import "reflect-metadata";
-import {createConnection, AdvancedConsoleLogger} from "typeorm";
+import {createConnection} from "typeorm";
 import {Teacher} from "./entity/Teacher";
 import {Student} from "./entity/Student";
 
+export const findTeacher = async(email:string) =>{
+
+    let connection = await createConnection();
+    const teacher = await connection.getRepository(Teacher).findOne(
+        {where:{email:email}});
+    
+    connection.close();
+    if(teacher!=null)
+        return true;
+    else
+        return false;
+}
 
 export const getData = async(email:string) =>{
 
@@ -39,15 +51,13 @@ export const getCommonStudents = async(emails:string[])=>{
         }
     }
 
-    var result = {"students":commonStudents};
-    return JSON.stringify(result);
+    return {"students":commonStudents};
 }
 
 export const getStudents = async(email:string)=>{
 
     var students = await getData(email);
-    var result = {"students":students};
-    return JSON.stringify(result);
+    return {"students":students};
 }
 
 export const registerStudents = async(body:object)=>{
@@ -86,21 +96,72 @@ export const registerStudents = async(body:object)=>{
     }
     else{
         var existing = teacher['students'];
-        console.log("existing",existing);
         if(existing!=null || existing.length!=0){
-            let difference = students.filter((person)=>!existing.includes(person));
-            console.log("different",difference);
-            let union = difference.concat(existing);
-            teacher.students = union;
-            console.log("union",union);
+            var union = students.concat(existing);
+            students = union;
         }
-        else{
-            teacher.students = students;
-        }   
+        teacher.students = students;
     }
 
-    connection.manager.save(teacher).then(()=>{connection.close()});
-    
+    //connection.manager.save(teacher).then(()=>{connection.close()});
+    await connection.manager.save(teacher);
+    connection.close();
     console.log("Registered new students under teacher id: " + teacher.email);
+}
 
+export const suspendStudent = async(body:object) =>{
+
+    var email = body['student'];
+    let connection = await createConnection();
+    const student = await connection.getRepository(Student).findOne(
+        {where:{email:email}});
+    
+
+    if(student!=null){
+        student.suspended = true;
+        await connection.getRepository(Student).save(student);
+    }
+    connection.close();
+}
+
+
+export const notifyStudents = async(body:object) =>{
+
+    var teacher_email = body['teacher'];
+    var notification = body['notification'];
+    var splitted = notification.split('@');
+    var studentEmails = [];
+    if(splitted.length>1){
+        for(var i=1;i<splitted.length;i=i+2){
+            if(i+1<splitted.length){
+                var temp = splitted[i] + '@' + splitted[i+1];
+                temp = temp.replace(/\s+/g, '');
+                studentEmails.push(temp);
+            }
+        }
+    }
+    console.log("emails: ", studentEmails);
+
+    let connection = await createConnection();
+    for(var email of studentEmails){
+        var found = await connection.getRepository(Student).findOne({where:{email:email}});
+        if(found==null){
+            var index = studentEmails.indexOf(email);
+            studentEmails.splice(index,1);
+        }
+    }
+    /*
+    var email = body['student'];
+    let connection = await createConnection();
+    const student = await connection.getRepository(Student).findOne(
+        {where:{email:email}});
+    
+
+    if(student!=null){
+        student.suspended = true;
+        await connection.getRepository(Student).save(student);
+    }
+    connection.close();
+    */
+   return {"done":"done"};
 }
