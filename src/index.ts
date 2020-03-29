@@ -6,6 +6,19 @@ const app = express();
 
 app.use(express.json())
 
+app.post('/api/register', async function(req,res){
+
+    var query = req.body;
+    console.log("query: ",query);
+
+    if(query.hasOwnProperty("students") && query.hasOwnProperty("teacher")){
+        await registerStudents(query);
+        res.status(204).send();
+    }
+    else
+        res.status(400).json({"message":"Request body is either empty or lacking 'students'/'teacher' field!"});
+});
+
 app.get('/api/commonstudents', async function(req,res){
 
     var queryString = req.query.teacher;
@@ -25,19 +38,6 @@ app.get('/api/commonstudents', async function(req,res){
 
         res.status(200).json(result);
     }
-});
-
-app.post('/api/register', async function(req,res){
-
-    var query = req.body;
-    console.log("query: ",query);
-
-    if(query.hasOwnProperty("students") && query.hasOwnProperty("teacher")){
-        await registerStudents(query);
-        res.status(204).send();
-    }
-    else
-        res.status(400).json({"message":"Request body is either empty or lacking 'students'/'teacher' field!"});
 });
 
 app.post('/api/suspend', async function(req,res){
