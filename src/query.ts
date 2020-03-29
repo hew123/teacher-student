@@ -140,28 +140,36 @@ export const notifyStudents = async(body:object) =>{
             }
         }
     }
-    console.log("emails: ", studentEmails);
 
     let connection = await createConnection();
-    for(var email of studentEmails){
-        var found = await connection.getRepository(Student).findOne({where:{email:email}});
-        if(found==null){
-            var index = studentEmails.indexOf(email);
-            studentEmails.splice(index,1);
+
+    const teacher = await connection.getRepository(Teacher).findOne(
+        {relations:["students"],where:{email:teacher_email}});
+        
+    if(teacher!=null){
+        var students = teacher['students'];
+        if(students.length!=0 && students!=null){
+            var unwrapped = students.map((student)=>student['email']);
+            for(var item of unwrapped){
+                if(!(studentEmails.includes(item)))
+                    studentEmails.push(item)
+            }
         }
     }
-    /*
-    var email = body['student'];
-    let connection = await createConnection();
-    const student = await connection.getRepository(Student).findOne(
-        {where:{email:email}});
-    
 
-    if(student!=null){
-        student.suspended = true;
-        await connection.getRepository(Student).save(student);
+    var toRemoved = [];
+    for(var email of studentEmails){
+        var found = await connection.getRepository(Student).findOne({where:{email:email}});
+        if(found==null)
+            toRemoved.push(email);
+        else{
+            if(found.suspended==true)
+                toRemoved.push(email);
+        }
     }
+    studentEmails = studentEmails.filter((item) => !((toRemoved).includes(item)));
+
     connection.close();
-    */
-   return {"done":"done"};
+
+   return {"recipients":studentEmails};
 }
