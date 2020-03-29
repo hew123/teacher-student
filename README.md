@@ -10,7 +10,7 @@ I am using ts-node to run the TS codes instead of running node js after compilin
 - docker-compose up (run docker image for sql)
 - OR use one's own sql db & change db settings in ormconfig.json
 - npm install
-- ts-node src/inject.ts to inject some initial data (optional)
+- ts-node src/inject.ts (to inject some initial data -- optional)
 - npm start (app running at localhost:3000)
 
 **DEBUGGING FOR MYSQL AUTH ISSUE**
